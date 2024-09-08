@@ -6,6 +6,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,6 +17,7 @@ public class ShawnApplicationContext {
 
     private Map<String, BeanDefinition> beanDefinitions = new ConcurrentHashMap<>();
     private Map<String, Object> singletons = new ConcurrentHashMap<>();
+    private List<BeanPostProcessor> beanPostProcessors = new ArrayList<>();
 
     public ShawnApplicationContext(Class<?> configClass) {
         System.out.println("---------------- 开始初始化, 读取配置类 ----------------");
@@ -44,6 +47,17 @@ public class ShawnApplicationContext {
                             System.out.println("加载类: " + nowClass);
                             if (nowClass.isAnnotationPresent(Component.class)) {
                                 System.out.println("component实例, 装载beanDefinition: ");
+
+                                if (BeanPostProcessor.class.isAssignableFrom(nowClass)) {
+                                    try {
+                                        BeanPostProcessor beanPostProcessor = (BeanPostProcessor) nowClass
+                                                .newInstance();
+                                        beanPostProcessors.add(beanPostProcessor);
+                                    } catch (InstantiationException | IllegalAccessException e) {
+                                        // TODO Auto-generated catch block
+                                        e.printStackTrace();
+                                    }
+                                }
                                 // 实例化类
                                 // newInstance需要类有无参构造器
                                 Component componentAnno = nowClass.getAnnotation(Component.class);
@@ -127,8 +141,16 @@ public class ShawnApplicationContext {
                 ((BeanNameAware) o).setBeanName(beanName);
             }
 
+            for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
+                beanPostProcessor.postProcessBeforeInitialization(beanName, o);
+            }
+
             if (o instanceof InitializingBean) {
                 ((InitializingBean) o).afterPropertiesSet();
+            }
+
+            for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
+                beanPostProcessor.postProcessAfterInitialization(beanName, o);
             }
 
             return o;
