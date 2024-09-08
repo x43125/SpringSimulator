@@ -17,9 +17,9 @@ public class ShawnApplicationContext {
     private Map<String, Object> singletons = new ConcurrentHashMap<>();
 
     public ShawnApplicationContext(Class<?> configClass) {
+        System.out.println("---------------- 开始初始化, 读取配置类 ----------------");
         // 引入配置类
         this.configClass = configClass;
-        System.out.println("---------------- 开始初始化, 读取配置类 ----------------");
         // 解析配置类, 读取到可扫描的范围
         if (configClass.isAnnotationPresent(ComponentScan.class)) {
             ComponentScan componentScan = configClass.getAnnotation(ComponentScan.class);
@@ -68,12 +68,12 @@ public class ShawnApplicationContext {
             }
 
             System.out.println("---------------- 初始化singletons ----------------");
-            for (Entry<String,BeanDefinition> entry : beanDefinitions.entrySet()) {
+            for (Entry<String, BeanDefinition> entry : beanDefinitions.entrySet()) {
                 String beanName = entry.getKey();
                 BeanDefinition beanDefinition = entry.getValue();
                 if ("singleton".equals(beanDefinition.getScope())) {
                     singletons.put(beanName, createBean(beanName, beanDefinition));
-                }                
+                }
             }
 
             System.out.println("---------------- 初始化结束 ----------------");
@@ -121,6 +121,14 @@ public class ShawnApplicationContext {
                     System.out.println("设置field值: " + fieldName);
                     field.set(o, getBean(fieldName));
                 }
+            }
+
+            if (o instanceof BeanNameAware) {
+                ((BeanNameAware) o).setBeanName(beanName);
+            }
+
+            if (o instanceof InitializingBean) {
+                ((InitializingBean) o).afterPropertiesSet();
             }
 
             return o;
