@@ -12,5 +12,7 @@ public class SimulatorApplication {
         System.out.println(userService);
         OrderService orderService = (OrderService) applicationContext.getBean("orderService");
         System.out.println(orderService);
+
+        userService.test();
     }
 }

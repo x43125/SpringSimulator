@@ -2,10 +2,12 @@ package com.shawn.spring;
 
 import java.beans.Introspector;
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ShawnApplicationContext {
@@ -17,7 +19,7 @@ public class ShawnApplicationContext {
     public ShawnApplicationContext(Class<?> configClass) {
         // 引入配置类
         this.configClass = configClass;
-        System.out.println("开始初始化, 读取配置类...");
+        System.out.println("---------------- 开始初始化, 读取配置类 ----------------");
         // 解析配置类, 读取到可扫描的范围
         if (configClass.isAnnotationPresent(ComponentScan.class)) {
             ComponentScan componentScan = configClass.getAnnotation(ComponentScan.class);
@@ -53,12 +55,9 @@ public class ShawnApplicationContext {
                                     beanDefinition.setScope(scopeAnno.value());
                                 }
                                 System.out.println("scope: " + beanDefinition.getScope());
-                                // 对象实例名: 
+                                // 对象实例名:
                                 String beanName = !"".equals(componentAnno.value()) ? componentAnno.value()
                                         : Introspector.decapitalize(nowClass.getSimpleName());
-                                if ("singleton".equals(beanDefinition.getScope())) {
-                                    singletons.put(beanName, createBean(beanName, beanDefinition));
-                                }
                                 beanDefinitions.put(beanName, beanDefinition);
                             }
                         }
@@ -67,6 +66,17 @@ public class ShawnApplicationContext {
             } catch (URISyntaxException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
+
+            System.out.println("---------------- 初始化singletons ----------------");
+            for (Entry<String,BeanDefinition> entry : beanDefinitions.entrySet()) {
+                String beanName = entry.getKey();
+                BeanDefinition beanDefinition = entry.getValue();
+                if ("singleton".equals(beanDefinition.getScope())) {
+                    singletons.put(beanName, createBean(beanName, beanDefinition));
+                }                
+            }
+
+            System.out.println("---------------- 初始化结束 ----------------");
         }
     }
 
@@ -101,10 +111,21 @@ public class ShawnApplicationContext {
 
         try {
             Object o = clazz.getConstructor().newInstance();
+
+            Field[] fields = clazz.getDeclaredFields();
+            for (Field field : fields) {
+                if (field.isAnnotationPresent(Autowired.class)) {
+                    String fieldName = field.getName();
+                    System.out.println("标注了autowired的field: " + fieldName);
+                    field.setAccessible(true);
+                    System.out.println("设置field值: " + fieldName);
+                    field.set(o, getBean(fieldName));
+                }
+            }
+
             return o;
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
