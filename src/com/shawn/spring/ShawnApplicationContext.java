@@ -47,7 +47,6 @@ public class ShawnApplicationContext {
                             System.out.println("加载类: " + nowClass);
                             if (nowClass.isAnnotationPresent(Component.class)) {
                                 System.out.println("component实例, 装载beanDefinition: ");
-
                                 if (BeanPostProcessor.class.isAssignableFrom(nowClass)) {
                                     try {
                                         BeanPostProcessor beanPostProcessor = (BeanPostProcessor) nowClass
@@ -150,7 +149,7 @@ public class ShawnApplicationContext {
             }
 
             for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
-                beanPostProcessor.postProcessAfterInitialization(beanName, o);
+                o = beanPostProcessor.postProcessAfterInitialization(beanName, o);
             }
 
             return o;

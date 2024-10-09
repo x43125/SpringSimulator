@@ -6,13 +6,14 @@ import com.shawn.spring.Component;
 import com.shawn.spring.InitializingBean;
 
 @Component
-public class UserService implements BeanNameAware, InitializingBean {
+public class UserService implements BeanNameAware, InitializingBean, UserInterface {
 
     private String beanName;
 
     @Autowired
     private OrderService orderService;
 
+    @Override
     public void test() {
         System.out.println("测试autowired: " + orderService);
         System.out.println("beanName: " + beanName);
